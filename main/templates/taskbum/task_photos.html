@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">
+    {{task.description}}
+</h1>
+
+{% if task.photos|length==0 %}
+<h2 class="subtitle">
+  This task haven't any photos yet:(
+</h2>
+{% endif %}
+<h2 class="subtitle">
+  <a href =  "{{ url_for('taskbum.add_photo', task_id=task.id) }}">Add photo</a>
+</h2>
+{% for photo in task.photos %}
+<img src="{{photo.photo_url}}" width="175" height="200" />
+<img src="https://linuxhint.com/wp-content/uploads/2018/10/3-12.png" width="175" height="200" />
+<p>{{photo.photo_url}}</p>
+<p>{{photo.encode_photo_url}}</p>
+<p>{{photo.description}}</p>
+{% endfor %}
+{% endblock %}

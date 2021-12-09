@@ -1,0 +1,17 @@
+import os
+
+TASK_GENERATOR_HOST = '127.0.0.1'
+TASK_GENERATOR_SECRET = 'xGyrpOpB/X+zpKtTgspeluOfE3TOmWV6'
+
+#RABBITMQ_HOST = 'rabbit'
+#RABBITMQ_LOGIN = 'guest'
+#RABBITMQ_PASSWORD = 'guest'
+
+if 'DEBUG' in os.environ:
+    TASK_GENERATOR_HOST = os.environ.get('TASK_GENERATOR_HOST')
+    TASK_GENERATOR_SECRET = os.environ.get('TASK_GENERATOR_SECRET')
+
+#    RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST')
+#    RABBITMQ_LOGIN = os.environ.get('RABBITMQ_DEFAULT_USER')
+#    RABBITMQ_PASSWORD = os.environ.get('RABBITMQ_DEFAULT_PASS')
+

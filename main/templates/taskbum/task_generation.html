@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">
+  Create task!
+</h1>
+<h2 class="subtitle">
+  If you want to generate a task, leave the text area empty
+</h2>
+<form method="post">
+    <textarea id="task" type="text"  name="task" placeholder='Task description'></textarea>
+<p><input type="submit" value="Create!"></p>
+</form>
+
+{% endblock %}

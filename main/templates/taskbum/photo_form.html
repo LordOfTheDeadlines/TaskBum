@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">
+  Add photo
+</h1>
+<form id="upload-file" method="post" enctype="multipart/form-data">
+        <input name="file" type="file" id="file">
+        <textarea id="text" type="text" name="text" placeholder='Photo description'></textarea>
+        <input type=submit value="Add">
+    </form>
+{% endblock %}
+
