@@ -4,7 +4,7 @@ services:
 # MY APP
   web1:
     build: ./main
-    container_name: web1
+    container_name: tb_web1
     restart: always
     command: bash -c "python main.py run -h 0.0.0.0"
     depends_on:
@@ -17,7 +17,7 @@ services:
 
   web2:
     build: ./main
-    container_name: web2
+    container_name: tb_web2
     restart: always
     command: bash -c "python main.py run -h 0.0.0.0"
     depends_on:
@@ -31,7 +31,7 @@ services:
   task_generator:
     build:
       ./task_generator
-    container_name: task_generator
+    container_name: tb_task_generator
     command: bash -c "python consumer.py"
     restart: always
     depends_on:
@@ -52,7 +52,7 @@ services:
   rabbit:
     image: rabbitmq:3-management
     hostname: "rabbit"
-    container_name: rabbit
+    container_name: tb_rabbit
     env_file: .env
     ports:
       - 15672:15672
@@ -62,7 +62,7 @@ services:
 
   db:
     image: postgres:latest
-    container_name: postgres_web
+    container_name: tb_postgres_web
     environment:
       - POSTGRES_USER=hello_flask
       - POSTGRES_PASSWORD=hello_flask
@@ -72,7 +72,7 @@ services:
       - 5432:5432
 
   redis:
-    container_name: redis
+    container_name: tb_redis
     image: redis
     ports:
       - 6379:6379
@@ -81,18 +81,27 @@ services:
       driver: none
 
   minio:
-    container_name: minio
-    image: minio/minio:RELEASE.2019-01-16T21-44-08Z
-    volumes:
-      - ./data:/data
+    image: minio/minio
+    command: server /data --console-address ":40089"
+    expose:
+      - "9000"
+      - "9001"
     ports:
-      - "9000:9000"
+      - 9000:9000
+      - 40089:40089
     environment:
+      MINIO_HTTP_TRACE: /log/minio.log
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
-    command: server /data
-    networks:
-      default:
-        aliases:
-          - "compose-minio"
+    volumes:
+      - ./minio/data:/data
+      - ./minio/log:/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
 

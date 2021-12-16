@@ -13,11 +13,24 @@
 <h2 class="subtitle">
   <a href =  "{{ url_for('taskbum.add_photo', task_id=task.id) }}">Add photo</a>
 </h2>
-{% for photo in task.photos %}
-<img src="{{photo.photo_url}}" width="175" height="200" />
-<img src="https://linuxhint.com/wp-content/uploads/2018/10/3-12.png" width="175" height="200" />
-<p>{{photo.photo_url}}</p>
-<p>{{photo.encode_photo_url}}</p>
-<p>{{photo.description}}</p>
-{% endfor %}
+    <div class="section">
+        <div id="app" class="row columns is-multiline">
+    {% for photo in task.photos %}
+         <div class="column is-4">
+            <div class="card large">
+              <div class="card-image">
+                <figure class="image is-16by9">
+                  <img src="{{photo.photo_url}}" alt="Image">
+                </figure>
+              </div>
+              <div class="card-content">
+                <div class="content">
+                  Description: {{photo.description}}
+                </div>
+              </div>
+            </div>
+         </div>
+    {% endfor %}
+ </div>
+</div>
 {% endblock %}

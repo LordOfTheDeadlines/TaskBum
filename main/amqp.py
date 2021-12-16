@@ -1,16 +1,13 @@
 import asyncio
-import json
-import os
 import uuid
-import aioamqp
 
-from database import db
+import aioamqp
+from flask import current_app
 from models import PhotoTask
 
-
-RABBITMQ_HOST = 'rabbit'
-RABBITMQ_LOGIN = 'guest'
-RABBITMQ_PASSWORD = 'guest'
+# RABBITMQ_HOST = 'rabbit'
+# RABBITMQ_LOGIN = 'guest'
+# RABBITMQ_PASSWORD = 'guest'
 
 
 class TaskBumRpcClient(object):
@@ -23,10 +20,10 @@ class TaskBumRpcClient(object):
 
     async def connect(self):
         """ an `__init__` method can't be a coroutine"""
-        self.transport, self.protocol = await aioamqp.connect(host=RABBITMQ_HOST,
+        self.transport, self.protocol = await aioamqp.connect(host=current_app.config['RABBITMQ_HOST'],
                                                               port=5672,
-                                                              login=RABBITMQ_LOGIN,
-                                                              password=RABBITMQ_PASSWORD)
+                                                              login=current_app.config['RABBITMQ_LOGIN'],
+                                                              password=current_app.config['RABBITMQ_PASSWORD'])
         self.channel = await self.protocol.channel()
 
         result = await self.channel.queue_declare(queue_name='', exclusive=True)

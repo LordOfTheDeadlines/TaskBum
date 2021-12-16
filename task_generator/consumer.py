@@ -1,23 +1,25 @@
 import asyncio
-import json
-import os
-from threading import Thread
-
-import aioamqp
-import redis
-import requests
 from random import randrange
 
+import aioamqp
+from app_redis import r
+
 tasks = ['сфоткайте трех уличных котов',
-         'эстетика ебеней',
+         'эстетика заброшек',
          'ночные посиделки на кухне',
          'фотография-иллюстрация к стихотворению Бродского']
 
 
 def get_task():
-    r = randrange(len(tasks))
-    print(tasks[r])
-    return tasks[r]
+    if r.exists('last_task'):
+        print('[x] Use redis')
+        task = r.get('last_task').decode('utf-8')
+    else:
+        print('[x] Use algorithm')
+        rnd = randrange(len(tasks))
+        task = tasks[rnd]
+        r.set('last_task', task, ex=10)
+    return task
 
 
 async def on_request(channel, body, envelope, properties):

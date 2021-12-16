@@ -2,7 +2,6 @@ import base64
 
 from database import db
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash
 
 
 class User(UserMixin, db.Model):
@@ -88,9 +87,13 @@ class Photo(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def is_empty(self):
+        photos = self.query.all()
+        return False if len(photos) else True
+
     def add_photo_url(self, url):
         self.photo_url = url
         encode_photo_url = base64.b64encode(bytes(url, 'utf-8'))
-        print("encode_photo_url = "+encode_photo_url.__str__())
+        print("[*] encode_photo_url = " + encode_photo_url.__str__())
         self.encode_photo_url = encode_photo_url
         db.session.commit()

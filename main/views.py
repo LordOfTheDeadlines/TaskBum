@@ -1,19 +1,17 @@
+import base64
 import os
 
 import flask_login
-import magic
+from amqp import loop, rpc_client
 from flask import render_template, request, url_for, Blueprint, current_app
 from flask_login import current_user
-from sqlalchemy.dialects.postgresql import psycopg2
+from minio_client import ensure_minio_bucket, get_objects_minio, get_minio_client
+from models import PhotoTask, Photo
+from urllib3.exceptions import ResponseError
 from werkzeug.utils import redirect
 
-from models import User, PhotoTask, Photo
-from amqp import loop, rpc_client
-
-from minio_client import hexdigest, ensure_minio_bucket, upload_minio, get_objects_minio
-
 taskbum = Blueprint('taskbum', __name__, template_folder='templates/taskbum')
-BUCKET_NAME = 'photos'
+BUCKET_NAME = current_app.config['BUCKET_NAME']
 
 
 @taskbum.route('/profile')
@@ -42,18 +40,20 @@ def task_generation():
 
 @taskbum.route("/tasks/<int:task_id>")
 def task_photos(task_id):
+    print('[*] populate db')
     task = PhotoTask.query.get(int(task_id))
-    prefix = f'{current_user.id}_{task_id}_'
-    print(prefix)
-    for obj in get_objects_minio(BUCKET_NAME, prefix):
-        print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
-              obj.etag, obj.size, obj.content_type)
     return render_template('task_photos.html', task_id=task_id, task=task)
 
 
 @taskbum.route("/addphoto/<task_id>", methods=['GET', 'POST'])
 def add_photo(task_id):
     if request.method == 'POST':
+        target = os.path.join(APP_ROOT, 'images/')
+        print(target)
+
+        if not os.path.isdir(target):
+            os.mkdir(target)
+
         photo_file = request.files['file']
         description = request.form.get('text')
         if not photo_file:
@@ -62,23 +62,37 @@ def add_photo(task_id):
         else:
             photo = Photo(None, None, description, task_id, current_user.id)
             Photo.upload(photo)
-            filename = f'{current_user.id}_{task_id}_{photo.id}.png'
-            full_filepath = os.path.join(current_app.config['UPLOAD_DIRECTORY'], filename)
-            photo_file.save(full_filepath)
-
-            mime = magic.Magic(mime=True)
-            content_type = mime.from_file(full_filepath)
-            metadata = {'Content-type': content_type}
-            print(metadata)
-
+            filename = f'{current_user.id}_{task_id}_{photo.id}.jpg'
+            destination = "/".join([target, filename])
+            photo_file.save(destination)
             ensure_minio_bucket(BUCKET_NAME)
-            file_url = upload_minio(BUCKET_NAME, full_filepath, filename, content_type, metadata)
-            photo.add_photo_url(file_url)
-
-            os.remove(full_filepath)
+            try:
+                minioClient = get_minio_client()
+                print('[*] fput')
+                print(minioClient.fput_object(BUCKET_NAME, filename, destination))
+                add_photo_to_db(photo, filename)
+            except ResponseError as err:
+                print(err)
             return redirect(url_for('taskbum.task_photos', task_id=task_id))
-
     return render_template('photo_form.html')
+
+
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def add_photo_to_db(photo, filename):
+    try:
+        # url = minioClient.presigned_get_object(BUCKET_NAME, filename, expires=timedelta(days=2))
+        url = ''
+        urls = get_objects_minio(BUCKET_NAME, filename)
+        for u in urls:
+            prefix = base64.b64encode(bytes(u.object_name, encoding='utf-8')).decode('utf-8')
+            url = 'http://localhost:40089/api/v1/buckets/photos/objects/download?preview=true&prefix=' \
+                  + prefix + '&version_id=null'
+        print("[*] url = " + url)
+        photo.add_photo_url(url)
+    except:
+        print("[*] Could not add " + str(photo) + " to db...")
 
 
 def sendMessageInRabbit(body):

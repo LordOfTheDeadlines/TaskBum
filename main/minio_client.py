@@ -1,11 +1,8 @@
-from hashlib import md5
+import socket
 from json import dumps
 
 from flask import current_app
 from minio import Minio
-
-# from minio.error import (BucketAlreadyOwnedByYou,
-#                          BucketAlreadyExists)
 
 POLICY_WORLD_READ = {
     "Version": "2012-10-17",
@@ -40,13 +37,9 @@ POLICY_WORLD_READ = {
 }
 
 
-def hexdigest(filepath):
-    hasher = md5()
-    with open(filepath, 'rb') as afile:
-        buf = afile.read()
-        hasher.update(buf)
-    return hasher.hexdigest()
-
+address = socket.gethostbyname('minio')
+#'{}:9000'.format(address)
+#current_app.config['MINIO_ENDPOINT']
 
 def get_minio_client():
     minioClient = Minio(current_app.config['MINIO_ENDPOINT'],
@@ -65,9 +58,9 @@ def ensure_minio_bucket(bucket_name):
         pass
 
 
-def upload_minio(bucket_name, source_path, destination_name,content_type, metadata):
+def upload_minio(bucket_name, source_path, destination_name):
     minioClient = get_minio_client()
-    minioClient.fput_object(bucket_name, destination_name, source_path, content_type=content_type, metadata=metadata)
+    minioClient.fput_object(bucket_name, destination_name, source_path)
     return f"http://{current_app.config['MINIO_STORAGE_URL']}{bucket_name}/{destination_name}"
 
 
