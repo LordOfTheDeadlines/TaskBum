@@ -3,15 +3,16 @@ import os
 
 import flask_login
 from amqp import loop, rpc_client
-from flask import render_template, request, url_for, Blueprint, current_app
+from flask import render_template, request, url_for, Blueprint
 from flask_login import current_user
 from minio_client import ensure_minio_bucket, get_objects_minio, get_minio_client
 from models import PhotoTask, Photo
+from config import Configuration
 from urllib3.exceptions import ResponseError
 from werkzeug.utils import redirect
 
 taskbum = Blueprint('taskbum', __name__, template_folder='templates/taskbum')
-BUCKET_NAME = current_app.config['BUCKET_NAME']
+BUCKET_NAME = Configuration.BUCKET_NAME
 
 
 @taskbum.route('/profile')
