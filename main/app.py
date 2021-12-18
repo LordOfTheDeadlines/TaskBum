@@ -1,9 +1,9 @@
 from flask import Flask
 
-from config import Configuration
-from database import db
+from config.config import Configuration
+from modules.database import db
 from flask_login import LoginManager
-from views import taskbum 
+from views import taskbum
 from auth import auth
 
 app = Flask(__name__, static_folder="static")

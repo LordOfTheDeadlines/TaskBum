@@ -3,6 +3,8 @@ from random import randrange
 
 import aioamqp
 from app_redis import r
+from config import Configuration
+from .views import add_task_description
 
 tasks = ['сфоткайте трех уличных котов',
          'эстетика заброшек',
@@ -39,10 +41,10 @@ async def on_request(channel, body, envelope, properties):
 
 
 async def rpc_server():
-    transport, protocol = await aioamqp.connect(host='rabbit',
+    transport, protocol = await aioamqp.connect(host=Configuration.RABBITMQ_HOST,
                                                 port=5672,
-                                                login='guest',
-                                                password='guest')
+                                                login=Configuration.RABBITMQ_LOGIN,
+                                                password=Configuration.RABBITMQ_PASSWORD)
 
     channel = await protocol.channel()
 

@@ -1,6 +1,6 @@
 import base64
 
-from database import db
+from modules.database import db
 from flask_login import UserMixin
 
 
@@ -66,15 +66,15 @@ class Photo(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     photo_url = db.Column(db.String(1000))
-    encode_photo_url = db.Column(db.String(2000))
+    # encode_photo_url = db.Column(db.String(2000))
     description = db.Column(db.String(1000))
 
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, photo_url, encode_photo_url, description, task_id, owner_id):
+    def __init__(self, photo_url, description, task_id, owner_id):
         self.photo_url = photo_url
-        self.encode_photo_url = encode_photo_url
+        # self.encode_photo_url = encode_photo_url
         self.description = description
         self.task_id = task_id
         self.owner_id = owner_id
@@ -93,7 +93,7 @@ class Photo(db.Model):
 
     def add_photo_url(self, url):
         self.photo_url = url
-        encode_photo_url = base64.b64encode(bytes(url, 'utf-8'))
-        print("[*] encode_photo_url = " + encode_photo_url.__str__())
-        self.encode_photo_url = encode_photo_url
+        # encode_photo_url = base64.b64encode(bytes(url, 'utf-8'))
+        # print("[*] encode_photo_url = " + encode_photo_url.__str__())
+        # self.encode_photo_url = encode_photo_url
         db.session.commit()

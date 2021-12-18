@@ -1,6 +1,4 @@
-import socket
 from json import dumps
-
 from flask import current_app
 from minio import Minio
 
@@ -36,10 +34,6 @@ POLICY_WORLD_READ = {
     ]
 }
 
-
-address = socket.gethostbyname('minio')
-#'{}:9000'.format(address)
-#current_app.config['MINIO_ENDPOINT']
 
 def get_minio_client():
     minioClient = Minio(current_app.config['MINIO_ENDPOINT'],

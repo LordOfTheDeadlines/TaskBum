@@ -1,15 +1,15 @@
 import base64
-import os
-
 import flask_login
-from amqp import loop, rpc_client
+
 from flask import render_template, request, url_for, Blueprint
 from flask_login import current_user
-from minio_client import ensure_minio_bucket, get_objects_minio, get_minio_client
-from models import PhotoTask, Photo
-from config import Configuration
 from urllib3.exceptions import ResponseError
 from werkzeug.utils import redirect
+
+from modules.amqp import loop, send
+from modules.minio_client import ensure_minio_bucket, get_objects_minio, get_minio_client
+from models import PhotoTask, Photo
+from config.config import Configuration
 
 taskbum = Blueprint('taskbum', __name__, template_folder='templates/taskbum')
 BUCKET_NAME = Configuration.BUCKET_NAME
@@ -41,7 +41,6 @@ def task_generation():
 
 @taskbum.route("/tasks/<int:task_id>")
 def task_photos(task_id):
-    print('[*] populate db')
     task = PhotoTask.query.get(int(task_id))
     return render_template('task_photos.html', task_id=task_id, task=task)
 
@@ -49,28 +48,25 @@ def task_photos(task_id):
 @taskbum.route("/addphoto/<task_id>", methods=['GET', 'POST'])
 def add_photo(task_id):
     if request.method == 'POST':
-        target = os.path.join(APP_ROOT, 'images/')
-        print(target)
-
-        if not os.path.isdir(target):
-            os.mkdir(target)
-
         photo_file = request.files['file']
         description = request.form.get('text')
         if not photo_file:
             # flash('Please check your login details and try again.')
             pass
         else:
-            photo = Photo(None, None, description, task_id, current_user.id)
+            photo = Photo(None, description, task_id, current_user.id)
             Photo.upload(photo)
-            filename = f'{current_user.id}_{task_id}_{photo.id}.jpg'
-            destination = "/".join([target, filename])
-            photo_file.save(destination)
+            filename = f'{current_user.id}_{task_id}_{photo.id}.'+photo_file.filename.rsplit('.', 1)[1].lower()
             ensure_minio_bucket(BUCKET_NAME)
             try:
                 minioClient = get_minio_client()
-                print('[*] fput')
-                print(minioClient.fput_object(BUCKET_NAME, filename, destination))
+                print(minioClient.put_object(
+                    bucket_name=BUCKET_NAME,
+                    object_name=filename,
+                    data=photo_file.stream,
+                    length=-1,
+                    part_size=10*1024*1024,
+                    content_type=photo_file.content_type))
                 add_photo_to_db(photo, filename)
             except ResponseError as err:
                 print(err)
@@ -78,11 +74,18 @@ def add_photo(task_id):
     return render_template('photo_form.html')
 
 
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+@taskbum.route('/tasks/generation', methods=['PUT'])
+def add_task_description(task_descr, current_user_id):
+    task = PhotoTask(task_descr, int(current_user_id))
+    PhotoTask.create(task)
+    return render_template('user_tasks.html', tasks=PhotoTask.find_by_creator_id(int(current_user_id)))
 
 
 def add_photo_to_db(photo, filename):
     try:
+        # minio.meta.client.download_file(
+        #     "training-logs", "windows.tar.gz", "windows.tar.gz"
+        # )
         # url = minioClient.presigned_get_object(BUCKET_NAME, filename, expires=timedelta(days=2))
         url = ''
         urls = get_objects_minio(BUCKET_NAME, filename)
@@ -97,5 +100,5 @@ def add_photo_to_db(photo, filename):
 
 
 def sendMessageInRabbit(body):
-    print(' [x] Send message to SDK')
-    loop.run_until_complete(rpc_client(body))
+    print(' [x] Send message')
+    loop.run_until_complete(send(body))
